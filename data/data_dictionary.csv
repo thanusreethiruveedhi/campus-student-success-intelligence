@@ -1,0 +1,22 @@
+Column,Data Type,Description,Business Purpose
+Student_ID,String,Unique identifier for each student,Identify individual students
+Branch,Categorical,Academic branch of the student,Compare performance across branches
+Year,Categorical,Current academic year,Compare performance across academic years
+Gender,Categorical,Student gender,Analyze demographic patterns
+Attendance,Numerical,Percentage of classes attended,Study relationship with academic performance
+Previous_CGPA,Numerical,CGPA from previous academic period,Measure previous academic performance
+Internal_Marks,Numerical,Internal assessment score,Measure continuous academic performance
+Assignment_Score,Numerical,Average assignment score,Measure coursework performance
+Study_Hours,Numerical,Average daily study hours,Analyze study behavior
+LMS_Activity,Numerical,Learning Management System activity score,Measure digital learning engagement
+Library_Visits,Numerical,Number of library visits,Measure academic resource usage
+Lab_Usage,Numerical,Lab usage score,Measure practical learning engagement
+Certifications,Numerical,Number of completed certifications,Measure additional learning
+Projects,Numerical,Number of completed academic/technical projects,Measure practical experience
+Hackathons,Numerical,Number of hackathons participated in,Measure extracurricular technical engagement
+Internships,Numerical,Number of internships completed,Measure industry exposure
+Commute_Time,Numerical,Average daily commute time in minutes,Study possible relationship with engagement
+Backlogs,Numerical,Number of current academic backlogs,Identify academic difficulty
+Final_CGPA,Numerical,Final academic CGPA,Measure overall academic outcome
+Academic_Status,Categorical,Overall academic status,Identify students needing attention
+Risk_Level,Categorical,Predicted academic support risk category,Support student intervention analysis
