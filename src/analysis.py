@@ -1,110 +1,332 @@
 import pandas as pd
 import numpy as np
-
-# Load dataset
-df = pd.read_csv("data/student_success_data.csv")
+import os
 
 print("=" * 60)
-print("CAMPUS STUDENT SUCCESS INTELLIGENCE")
+print("DATA CLEANING + EXPLORATORY DATA ANALYSIS")
 print("=" * 60)
 
-# -----------------------------
-# 1. BASIC DATA UNDERSTANDING
-# -----------------------------
+# --------------------------------------------------
+# 1. LOAD RAW DATA
+# --------------------------------------------------
 
-print("\nDataset Shape:")
-print(df.shape)
+input_file = "data/student_success_data.csv"
+clean_file = "data/student_success_clean.csv"
 
-print("\nColumns:")
-print(df.columns.tolist())
+df = pd.read_csv(input_file)
 
-print("\nData Types:")
+print("\nRAW DATA")
+print("-" * 40)
+
+print("Rows    :", df.shape[0])
+print("Columns :", df.shape[1])
+
+# --------------------------------------------------
+# 2. DATA TYPES
+# --------------------------------------------------
+
+print("\nDATA TYPES")
+print("-" * 40)
+
 print(df.dtypes)
 
-print("\nFirst 5 Records:")
-print(df.head())
+# --------------------------------------------------
+# 3. MISSING VALUES
+# --------------------------------------------------
 
-# -----------------------------
-# 2. MISSING VALUES
-# -----------------------------
+print("\nMISSING VALUES")
+print("-" * 40)
 
-print("\nMissing Values:")
-print(df.isnull().sum())
+missing_values = df.isnull().sum()
 
-# -----------------------------
-# 3. DUPLICATE RECORDS
-# -----------------------------
+print(missing_values)
 
-print("\nDuplicate Records:")
-print(df.duplicated().sum())
+# --------------------------------------------------
+# 4. DUPLICATES
+# --------------------------------------------------
 
-# Remove duplicates
+print("\nDUPLICATE RECORDS")
+print("-" * 40)
+
+duplicates = df.duplicated().sum()
+
+print("Duplicate rows:", duplicates)
+
+# Remove duplicates if any
 df = df.drop_duplicates()
 
-# -----------------------------
-# 4. CHECK UNIQUE STUDENT IDs
-# -----------------------------
+# --------------------------------------------------
+# 5. DUPLICATE STUDENT IDs
+# --------------------------------------------------
 
-print("\nUnique Student IDs:")
-print(df["Student_ID"].nunique())
+duplicate_ids = df["Student_ID"].duplicated().sum()
 
-# -----------------------------
-# 5. NUMERICAL SUMMARY
-# -----------------------------
+print("Duplicate Student IDs:", duplicate_ids)
 
-print("\nNumerical Summary:")
-print(df.describe())
+# --------------------------------------------------
+# 6. BASIC VALIDATION
+# --------------------------------------------------
 
-# -----------------------------
-# 6. CATEGORICAL SUMMARY
-# -----------------------------
+print("\nDATA VALIDATION")
+print("-" * 40)
 
-print("\nBranch Distribution:")
-print(df["Branch"].value_counts())
+print(
+    "Attendance range:",
+    df["Attendance"].min(),
+    "to",
+    df["Attendance"].max()
+)
 
-print("\nYear Distribution:")
-print(df["Year"].value_counts())
+print(
+    "Previous CGPA range:",
+    df["Previous_CGPA"].min(),
+    "to",
+    df["Previous_CGPA"].max()
+)
 
-print("\nGender Distribution:")
-print(df["Gender"].value_counts())
+print(
+    "Final CGPA range:",
+    df["Final_CGPA"].min(),
+    "to",
+    df["Final_CGPA"].max()
+)
 
-print("\nAcademic Status:")
+# --------------------------------------------------
+# 7. SAVE CLEAN DATA
+# --------------------------------------------------
+
+df.to_csv(clean_file, index=False)
+
+print("\nClean dataset saved:")
+print(clean_file)
+
+# ==================================================
+# EXPLORATORY DATA ANALYSIS
+# ==================================================
+
+print("\n")
+print("=" * 60)
+print("EXPLORATORY DATA ANALYSIS")
+print("=" * 60)
+
+# --------------------------------------------------
+# 8. KEY PERFORMANCE INDICATORS
+# --------------------------------------------------
+
+print("\nKEY PERFORMANCE INDICATORS")
+print("-" * 40)
+
+total_students = len(df)
+
+average_cgpa = df["Final_CGPA"].mean()
+
+average_attendance = df["Attendance"].mean()
+
+high_risk = (df["Risk_Level"] == "High Risk").sum()
+
+print(f"Total Students       : {total_students}")
+print(f"Average Final CGPA   : {average_cgpa:.2f}")
+print(f"Average Attendance   : {average_attendance:.2f}%")
+print(f"High-Risk Students   : {high_risk}")
+
+# --------------------------------------------------
+# 9. BRANCH PERFORMANCE
+# --------------------------------------------------
+
+print("\nBRANCH PERFORMANCE")
+print("-" * 40)
+
+branch_performance = (
+    df.groupby("Branch")
+    .agg(
+        Students=("Student_ID", "count"),
+        Average_CGPA=("Final_CGPA", "mean"),
+        Average_Attendance=("Attendance", "mean")
+    )
+    .round(2)
+)
+
+high_risk_by_branch = (
+    df[df["Risk_Level"] == "High Risk"]
+    .groupby("Branch")
+    .size()
+    .rename("High_Risk")
+)
+
+branch_performance = branch_performance.join(
+    high_risk_by_branch,
+    how="left"
+)
+
+branch_performance["High_Risk"] = (
+    branch_performance["High_Risk"]
+    .fillna(0)
+    .astype(int)
+)
+
+print(branch_performance)
+
+# --------------------------------------------------
+# 10. ACADEMIC STATUS
+# --------------------------------------------------
+
+print("\nACADEMIC STATUS")
+print("-" * 40)
+
 print(df["Academic_Status"].value_counts())
 
-print("\nRisk Level:")
+# --------------------------------------------------
+# 11. RISK DISTRIBUTION
+# --------------------------------------------------
+
+print("\nRISK DISTRIBUTION")
+print("-" * 40)
+
 print(df["Risk_Level"].value_counts())
 
-# -----------------------------
-# 7. DATA VALIDATION
-# -----------------------------
+# --------------------------------------------------
+# 12. CORRELATION ANALYSIS
+# --------------------------------------------------
 
-print("\nData Validation:")
+print("\nCORRELATION WITH FINAL CGPA")
+print("-" * 40)
 
-print(
-    "Attendance outside 0-100:",
-    ((df["Attendance"] < 0) | (df["Attendance"] > 100)).sum()
+numeric_columns = df.select_dtypes(
+    include=np.number
 )
 
-print(
-    "CGPA outside 0-10:",
-    ((df["Previous_CGPA"] < 0) | (df["Previous_CGPA"] > 10)).sum()
+correlation = (
+    numeric_columns
+    .corr()["Final_CGPA"]
+    .sort_values(ascending=False)
 )
 
-print(
-    "Final CGPA outside 0-10:",
-    ((df["Final_CGPA"] < 0) | (df["Final_CGPA"] > 10)).sum()
+print(correlation.round(3))
+
+# --------------------------------------------------
+# 13. RESOURCE USAGE
+# --------------------------------------------------
+
+print("\nRESOURCE USAGE")
+print("-" * 40)
+
+resource_usage = pd.DataFrame({
+    "Resource": [
+        "LMS Activity",
+        "Library Visits",
+        "Lab Usage",
+        "Projects",
+        "Certifications",
+        "Hackathons",
+        "Internships"
+    ],
+    "Average": [
+        df["LMS_Activity"].mean(),
+        df["Library_Visits"].mean(),
+        df["Lab_Usage"].mean(),
+        df["Projects"].mean(),
+        df["Certifications"].mean(),
+        df["Hackathons"].mean(),
+        df["Internships"].mean()
+    ]
+})
+
+resource_usage["Average"] = resource_usage["Average"].round(2)
+
+print(resource_usage)
+
+# --------------------------------------------------
+# 14. RISK BY BRANCH
+# --------------------------------------------------
+
+print("\nRISK BY BRANCH")
+print("-" * 40)
+
+risk_by_branch = pd.crosstab(
+    df["Branch"],
+    df["Risk_Level"]
 )
 
-print(
-    "Negative Backlogs:",
-    (df["Backlogs"] < 0).sum()
+print(risk_by_branch)
+
+# --------------------------------------------------
+# 15. ATTENDANCE GROUP ANALYSIS
+# --------------------------------------------------
+
+print("\nATTENDANCE GROUP ANALYSIS")
+print("-" * 40)
+
+df["Attendance_Group"] = pd.cut(
+    df["Attendance"],
+    bins=[0, 60, 75, 85, 100],
+    labels=[
+        "Below 60%",
+        "60-75%",
+        "75-85%",
+        "Above 85%"
+    ]
 )
 
-# -----------------------------
-# 8. SAVE CLEAN DATA
-# -----------------------------
+attendance_analysis = (
+    df.groupby("Attendance_Group", observed=True)
+    .agg(
+        Students=("Student_ID", "count"),
+        Average_CGPA=("Final_CGPA", "mean")
+    )
+    .round(2)
+)
 
-df.to_csv("data/student_success_clean.csv", index=False)
+print(attendance_analysis)
 
-print("\nClean dataset saved successfully!")
-print("Location: data/student_success_clean.csv")
+# --------------------------------------------------
+# 16. BACKLOG ANALYSIS
+# --------------------------------------------------
+
+print("\nBACKLOG ANALYSIS")
+print("-" * 40)
+
+backlog_analysis = (
+    df.groupby("Backlogs")
+    .agg(
+        Students=("Student_ID", "count"),
+        Average_CGPA=("Final_CGPA", "mean")
+    )
+    .round(2)
+)
+
+print(backlog_analysis)
+
+# --------------------------------------------------
+# 17. SAVE ANALYSIS TABLES
+# --------------------------------------------------
+
+branch_performance.to_csv(
+    "data/branch_performance.csv"
+)
+
+resource_usage.to_csv(
+    "data/resource_usage.csv",
+    index=False
+)
+
+risk_by_branch.to_csv(
+    "data/risk_by_branch.csv"
+)
+
+attendance_analysis.to_csv(
+    "data/attendance_analysis.csv"
+)
+
+backlog_analysis.to_csv(
+    "data/backlog_analysis.csv"
+)
+
+print("\nAnalysis tables saved successfully.")
+
+# --------------------------------------------------
+# 18. FINAL MESSAGE
+# --------------------------------------------------
+
+print("\n" + "=" * 60)
+print("DATA CLEANING + EDA COMPLETED SUCCESSFULLY")
+print("=" * 60)

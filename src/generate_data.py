@@ -5,101 +5,200 @@ np.random.seed(42)
 
 n_students = 1000
 
+# -----------------------------
+# BASIC STUDENT INFORMATION
+# -----------------------------
+
 branches = ["CSE", "CSE-AI", "ECE", "EEE", "Mechanical", "Civil"]
 years = ["2nd Year", "3rd Year", "4th Year"]
 genders = ["Female", "Male"]
 
-data = {
+df = pd.DataFrame({
     "Student_ID": [f"STU{str(i).zfill(4)}" for i in range(1, n_students + 1)],
     "Branch": np.random.choice(branches, n_students),
     "Year": np.random.choice(years, n_students),
-    "Gender": np.random.choice(genders, n_students),
-    "Attendance": np.clip(np.random.normal(78, 12, n_students), 40, 100),
-    "Previous_CGPA": np.clip(np.random.normal(7.5, 1.0, n_students), 4.0, 10.0),
-    "Internal_Marks": np.clip(np.random.normal(72, 15, n_students), 30, 100),
-    "Assignment_Score": np.clip(np.random.normal(75, 14, n_students), 25, 100),
-    "Study_Hours": np.clip(np.random.normal(3.5, 1.8, n_students), 0.5, 10),
-    "LMS_Activity": np.clip(np.random.normal(65, 20, n_students), 5, 100),
-    "Library_Visits": np.clip(np.random.poisson(5, n_students), 0, 20),
-    "Lab_Usage": np.clip(np.random.normal(65, 18, n_students), 10, 100),
-    "Certifications": np.clip(np.random.poisson(2, n_students), 0, 8),
-    "Projects": np.clip(np.random.poisson(2, n_students), 0, 7),
-    "Hackathons": np.clip(np.random.poisson(1, n_students), 0, 5),
-    "Internships": np.clip(np.random.poisson(1, n_students), 0, 4),
-    "Commute_Time": np.clip(np.random.normal(45, 20, n_students), 5, 120),
-    "Backlogs": np.clip(np.random.poisson(0.7, n_students), 0, 5),
-}
+    "Gender": np.random.choice(genders, n_students)
+})
 
-df = pd.DataFrame(data)
+# -----------------------------
+# ACADEMIC + ENGAGEMENT DATA
+# -----------------------------
 
-# Generate final CGPA using several academic and engagement factors
-performance_score = (
-    df["Previous_CGPA"] * 0.35
-    + (df["Attendance"] / 10) * 0.15
-    + (df["Internal_Marks"] / 10) * 0.15
-    + (df["Assignment_Score"] / 10) * 0.10
-    + (df["Study_Hours"] / 10) * 0.05
-    + (df["LMS_Activity"] / 100) * 1.0
+df["Attendance"] = np.clip(
+    np.random.normal(80, 10, n_students), 50, 100
+).round(2)
+
+df["Previous_CGPA"] = np.clip(
+    np.random.normal(7.5, 0.9, n_students), 5.0, 9.8
+).round(2)
+
+df["Internal_Marks"] = np.clip(
+    np.random.normal(72, 12, n_students), 40, 100
+).round(2)
+
+df["Assignment_Score"] = np.clip(
+    np.random.normal(74, 12, n_students), 40, 100
+).round(2)
+
+df["Study_Hours"] = np.clip(
+    np.random.normal(4.5, 1.5, n_students), 1, 9
+).round(2)
+
+df["LMS_Activity"] = np.clip(
+    np.random.normal(68, 16, n_students), 20, 100
+).round(2)
+
+df["Library_Visits"] = np.clip(
+    np.random.poisson(5, n_students), 0, 15
+)
+
+df["Lab_Usage"] = np.clip(
+    np.random.normal(70, 15, n_students), 20, 100
+).round(2)
+
+df["Certifications"] = np.clip(
+    np.random.poisson(2, n_students), 0, 7
+)
+
+df["Projects"] = np.clip(
+    np.random.poisson(2, n_students), 0, 6
+)
+
+df["Hackathons"] = np.clip(
+    np.random.poisson(1, n_students), 0, 4
+)
+
+df["Internships"] = np.clip(
+    np.random.poisson(1, n_students), 0, 3
+)
+
+df["Commute_Time"] = np.clip(
+    np.random.normal(40, 18, n_students), 5, 100
+).round(2)
+
+# -----------------------------
+# BACKLOGS
+# -----------------------------
+
+backlog_probability = np.clip(
+    0.08 + (7.5 - df["Previous_CGPA"]) * 0.08,
+    0.03,
+    0.35
+)
+
+df["Backlogs"] = np.random.binomial(
+    4,
+    backlog_probability
+)
+
+# -----------------------------
+# FINAL CGPA
+# -----------------------------
+# Designed around a realistic
+# college-performance range.
+
+final_cgpa = (
+    df["Previous_CGPA"] * 0.45
+    + df["Attendance"] * 0.015
+    + df["Internal_Marks"] * 0.015
+    + df["Assignment_Score"] * 0.010
+    + df["LMS_Activity"] * 0.008
+    + df["Study_Hours"] * 0.08
+    + df["Projects"] * 0.05
     + df["Certifications"] * 0.03
-    + df["Projects"] * 0.04
     - df["Backlogs"] * 0.15
     - df["Commute_Time"] * 0.002
+    + np.random.normal(0, 0.25, n_students)
 )
 
 df["Final_CGPA"] = np.clip(
-    performance_score + np.random.normal(0, 0.35, n_students),
-    4.0,
-    10.0
+    final_cgpa,
+    5.0,
+    9.8
 ).round(2)
 
-# Academic status
-df["Academic_Status"] = np.where(
-    df["Final_CGPA"] >= 7.0,
-    "Good Standing",
-    np.where(
-        df["Final_CGPA"] >= 5.5,
-        "Needs Attention",
-        "At Risk"
-    )
+# -----------------------------
+# ACADEMIC STATUS
+# -----------------------------
+
+df["Academic_Status"] = np.select(
+    [
+        df["Final_CGPA"] >= 7.5,
+        df["Final_CGPA"] >= 6.0
+    ],
+    [
+        "Good Standing",
+        "Needs Attention"
+    ],
+    default="At Risk"
 )
 
-# Risk level
+# -----------------------------
+# STUDENT RISK SCORE
+# -----------------------------
+
 risk_score = (
-    (100 - df["Attendance"]) * 0.25
-    + (10 - df["Previous_CGPA"]) * 8
-    + (100 - df["Internal_Marks"]) * 0.15
-    + df["Backlogs"] * 8
-    + df["Commute_Time"] * 0.05
-    - df["LMS_Activity"] * 0.05
+    (100 - df["Attendance"]) * 0.20
+    + (8.5 - df["Previous_CGPA"]) * 5
+    + (100 - df["Internal_Marks"]) * 0.12
+    + df["Backlogs"] * 7
+    - df["LMS_Activity"] * 0.04
+    - df["Study_Hours"] * 1.2
 )
 
-df["Risk_Level"] = pd.cut(
-    risk_score,
-    bins=[-np.inf, 18, 30, np.inf],
-    labels=["Low Risk", "Medium Risk", "High Risk"]
+# Percentile-based risk classification
+risk_percentile = pd.Series(risk_score).rank(pct=True)
+
+df["Risk_Level"] = np.select(
+    [
+        risk_percentile <= 0.65,
+        risk_percentile <= 0.88
+    ],
+    [
+        "Low Risk",
+        "Medium Risk"
+    ],
+    default="High Risk"
 )
 
-# Round numerical columns
-df["Attendance"] = df["Attendance"].round(2)
-df["Previous_CGPA"] = df["Previous_CGPA"].round(2)
-df["Internal_Marks"] = df["Internal_Marks"].round(2)
-df["Assignment_Score"] = df["Assignment_Score"].round(2)
-df["Study_Hours"] = df["Study_Hours"].round(2)
-df["LMS_Activity"] = df["LMS_Activity"].round(2)
-df["Lab_Usage"] = df["Lab_Usage"].round(2)
-df["Commute_Time"] = df["Commute_Time"].round(2)
+# -----------------------------
+# SAVE DATASET
+# -----------------------------
 
-# Save dataset
-df.to_csv("data/student_success_data.csv", index=False)
+df.to_csv(
+    "data/student_success_data.csv",
+    index=False
+)
 
-print("Dataset created successfully!")
-print(f"Number of students: {len(df)}")
-print(f"Number of columns: {len(df.columns)}")
-print("\nFirst 5 records:")
-print(df.head())
+# -----------------------------
+# DISPLAY RESULTS
+# -----------------------------
 
-print("\nRisk distribution:")
+print("=" * 60)
+print("NEW DATASET CREATED SUCCESSFULLY")
+print("=" * 60)
+
+print(f"\nStudents : {len(df)}")
+print(f"Columns  : {len(df.columns)}")
+
+print("\nAcademic Status:")
+print(df["Academic_Status"].value_counts())
+
+print("\nRisk Level:")
 print(df["Risk_Level"].value_counts())
 
-print("\nDataset saved to:")
+print("\nAverage Final CGPA:")
+print(round(df["Final_CGPA"].mean(), 2))
+
+print("\nAverage Attendance:")
+print(round(df["Attendance"].mean(), 2))
+
+print("\nFinal CGPA Range:")
+print(
+    round(df["Final_CGPA"].min(), 2),
+    "to",
+    round(df["Final_CGPA"].max(), 2)
+)
+
+print("\nDataset saved:")
 print("data/student_success_data.csv")
