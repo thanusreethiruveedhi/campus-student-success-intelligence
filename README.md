@@ -98,9 +98,11 @@ The major objectives are:
 
 # 📊 Dataset
 
-The project uses a **synthetic dataset containing 1,000 students**.
+The project uses a synthetic student dataset containing 1,000 student records and 21 variables.
 
-The dataset contains **21 columns**.
+**Dataset file:** `data/student_success_data.csv`
+
+[View Dataset](./data/student_success_data.csv)
 
 ### Main Dimensions
 
